@@ -1,5 +1,7 @@
 # Rubik's cube solver
 
+**Live demo: <https://khrapov.org/rubiks_cube/rubik_cube.html>** (needs a camera; works best on a phone).
+
 A single-page web app that solves your _physical_ Rubik's cube:
 
 1. **Scan** — point the camera at each of the six faces (guided, one face at a time).
