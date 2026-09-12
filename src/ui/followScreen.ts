@@ -26,6 +26,8 @@ export function mountFollowScreen(container: HTMLElement, app: App, state: Follo
   // state *after* it, i.e. states[index + 1]. index === moves.length = finished.
   let index = 0;
   let busy = false;
+  /** Whether the current move has been animated yet (the first waits for a click). */
+  let played = false;
 
   const viewport = el('div', { class: 'viewport' });
   const view = new CubeView(viewport, states[0]!, colors);
@@ -46,7 +48,9 @@ export function mountFollowScreen(container: HTMLElement, app: App, state: Follo
 
   const prevBtn = button('← Prev', () => void goTo(index - 1));
   const replayBtn = button('Replay', () => void play(index));
-  const nextBtn = button('Next →', () => void goTo(index + 1), { primary: true });
+  const nextBtn = button('Next →', () => void (played ? goTo(index + 1) : play(index)), {
+    primary: true,
+  });
   const restartBtn = button('Scan another cube', () => app.go({ screen: 'scan' }), {
     primary: true,
   });
@@ -62,7 +66,6 @@ export function mountFollowScreen(container: HTMLElement, app: App, state: Follo
     ),
   );
   render();
-  if (moves.length > 0) void play(0);
 
   /** Animates move k from the state before it. */
   async function play(k: number): Promise<void> {
@@ -71,6 +74,7 @@ export function mountFollowScreen(container: HTMLElement, app: App, state: Follo
     render();
     view.setFacelets(states[k]!);
     await view.animateMove(moves[k]!, states[k + 1]!);
+    played = true;
     busy = false;
     render();
   }
@@ -100,11 +104,18 @@ export function mountFollowScreen(container: HTMLElement, app: App, state: Follo
       const m = moves[index]!;
       progress.textContent = `Move ${index + 1} of ${moves.length}`;
       moveLabel.textContent = formatMove(m);
-      moveText.textContent = describeMove(m);
+      moveText.textContent = played
+        ? describeMove(m)
+        : `${describeMove(m)} Press “Show move” to see it on the cube.`;
     }
     prevBtn.hidden = replayBtn.hidden = nextBtn.hidden = moves.length === 0;
     restartBtn.hidden = !finished && moves.length > 0;
-    nextBtn.textContent = index === moves.length - 1 ? 'Done ✓' : 'Done, next →';
+    nextBtn.textContent = !played
+      ? 'Show move ▶'
+      : index === moves.length - 1
+        ? 'Done ✓'
+        : 'Done, next →';
+    replayBtn.hidden = replayBtn.hidden || !played;
     prevBtn.disabled = busy || index === 0;
     nextBtn.disabled = busy || finished;
     replayBtn.disabled = busy || finished;

@@ -359,6 +359,10 @@ footer.panel {
   overflow: hidden;
 }
 
+.thumbs.is-mirrored .mini-grid {
+  transform: scaleX(-1);
+}
+
 .mini-grid span {
   display: block;
   background: transparent;

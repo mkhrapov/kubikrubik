@@ -184,6 +184,8 @@ export function mountScanScreen(container: HTMLElement, app: App): Unmount {
   function setMirrored(on: boolean): void {
     mirrored = on;
     frame.classList.toggle('is-mirrored', on);
+    // Thumbnails should look like the preview the user is watching.
+    thumbs.classList.toggle('is-mirrored', on);
     mirrorBtn.classList.toggle('is-on', on);
     mirrorBtn.setAttribute('aria-pressed', String(on));
   }
