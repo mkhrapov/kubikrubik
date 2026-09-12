@@ -39,9 +39,11 @@ screen with that scramble, bypassing the camera. Useful for exercising review/fo
 src/cube/      Pure domain, no DOM/deps. Facelets = Face[54] in Kociemba order (see below).
                moves.ts (facelet cycles per face), notation.ts, validate.ts (legal-state check),
                net.ts (index ↔ (face,row,col) and ↔ 3D cubie position).
-src/scan/      camera.ts (getUserMedia), capture.ts (grid → 9 RGB samples), colorClassify.ts
-               (54 RGB → Facelets, seeded by the 6 centers, 9-per-color constraint), protocol.ts
-               (capture order + user instructions).
+src/scan/      camera.ts (getUserMedia), capture.ts (grid → 9 RGB samples; trimmed median per
+               cell to survive glare), colorClassify.ts (54 RGB → Facelets in Lab with lightness
+               down-weighted, seeded by the 6 centers, 9-per-color constraint), protocol.ts
+               (capture order, instructions, NEIGHBORS), scheme.ts (Western/Japanese color
+               scheme → expected color name per face, used only for on-screen guidance).
 src/solver/    kociemba.ts wraps cubejs; solver.worker.ts runs it off-thread; solver.ts is the
                Promise client (init kicked off in main.ts at page load — table build takes seconds).
 src/viewer/    cubeView.ts: Three.js cube; a move is animated by rotating a pivot group, then the
@@ -50,7 +52,10 @@ src/viewer/    cubeView.ts: Three.js cube; a move is animated by rotating a pivo
 src/ui/        scanScreen / reviewScreen / followScreen + tiny DOM helpers; src/app.ts is the
                screen state machine (scan → review → follow).
 test/          Vitest. test/moves.test.ts cross-checks every move against cubejs; solver.test.ts
-               proves cubejs solutions applied with our own move engine solve random cubes.
+               proves cubejs solutions applied with our own move engine solve random cubes;
+               realScans.test.ts + fixtures/realScans.ts hold real webcam scans with the user's
+               corrections as ground truth — add new scans there (window.__lastScan has the
+               samples; sessionStorage 'kubikrubik.state' has the corrected facelets).
 ```
 
 ### Invariants worth knowing
@@ -59,11 +64,14 @@ test/          Vitest. test/moves.test.ts cross-checks every move against cubejs
   (U above F, L F R B in a row, D below F).** `cubejs`, `moves.ts`, `validate.ts`, `net.ts`, the
   scan protocol and the review net all depend on this. `cubejs.fromString` maps _colors to faces via
   the centers_, so facelets always hold face letters, never colors.
-- **Scan order is F, R, B, L, U, D** with the same face kept on top; U is captured by tilting the
-  top toward the camera, D by tilting the bottom toward the camera. With that protocol every
-  captured 3×3 grid maps to the net row-by-row with no rotation. Changing instructions or order
-  requires revisiting `scan/protocol.ts` _and_ `scanScreen.ts`'s `onReview`.
-- The camera preview must never be CSS-mirrored (it would flip the grid mapping).
+- **Scan order is F, U, D, R, B, L** with the same face kept on top; U is captured by tilting the
+  top toward the camera, D by tilting the bottom toward the camera, the sides by turning the cube
+  left a quarter at a time. With that protocol every captured 3×3 grid maps to the net row-by-row
+  with no rotation, and `scan/protocol.ts`'s `NEIGHBORS` table tells the scan screen which face
+  color belongs on each side of the current one. Change instructions, order and `NEIGHBORS` together.
+- The scan preview is mirrored (CSS `scaleX(-1)` on `.frame`) for user-facing cameras so the cube
+  moves the way the user moves it; sampling always reads the unmirrored `<video>`, and the grid,
+  live dots and edge badges live inside the mirrored frame so they stay consistent with the image.
 - 3D coordinates: +x = R, +y = U, +z = F. A clockwise turn (as seen from outside a face) is a
   negative rotation about that face's outward normal.
 - `cubejs` is CommonJS with no types (`src/solver/cubejs.d.ts`). Its `lib/solve.js` reads
@@ -71,5 +79,7 @@ test/          Vitest. test/moves.test.ts cross-checks every move against cubejs
   applied to the main build, the **worker sub-build** (`worker.plugins`) and dev pre-bundling
   (`optimizeDeps.rolldownOptions.plugins`). cubejs also declares a useless runtime dependency on
   `npm@6`; `package.json` `overrides` replaces it with an empty package.
+- App state (review/follow) is persisted in sessionStorage so a reload (or Vite full reload in
+  dev) doesn't lose a scan; the scan screen itself is not persisted.
 - `[hidden] { display: none !important }` is in `styles.css` because several elements have their
   own `display` rules; use `el.hidden = …` to toggle visibility.

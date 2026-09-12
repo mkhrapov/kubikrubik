@@ -1,4 +1,4 @@
-import { App } from './app';
+import { App, loadPersistedState } from './app';
 import { applyMoves, parseMoves, solvedFacelets } from './cube';
 import { solver } from './solver/solver';
 import { DEFAULT_FACE_COLORS } from './ui/palette';
@@ -20,5 +20,5 @@ if (scramble !== null) {
     faceColors: DEFAULT_FACE_COLORS,
   });
 } else {
-  app.go({ screen: 'scan' });
+  app.go(loadPersistedState() ?? { screen: 'scan' });
 }

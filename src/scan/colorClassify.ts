@@ -18,8 +18,14 @@ export function rgbToLab([r, g, b]: RGB): Lab {
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
 
+/**
+ * Lightness is down-weighted: shadows and uneven light change L a lot while
+ * the chroma (a, b) of a sticker stays comparatively stable.
+ */
+const L_WEIGHT = 0.5;
+
 function dist2(a: Lab, b: Lab): number {
-  return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  return (L_WEIGHT * (a[0] - b[0])) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 }
 
 export interface Classification {

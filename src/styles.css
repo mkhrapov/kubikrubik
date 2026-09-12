@@ -80,7 +80,7 @@ footer.panel {
 
 .status {
   min-height: 1.2em;
-  margin: 6px 0;
+  margin: 4px 0;
 }
 
 /* Buttons */
@@ -126,21 +126,36 @@ footer.panel {
   container-type: size;
 }
 
+/* Everything in true camera coordinates; mirrored as a whole for selfie cameras. */
+.frame {
+  position: absolute;
+  inset: 0;
+}
+
+.frame.is-mirrored {
+  transform: scaleX(-1);
+}
+
+/* Text inside the mirrored frame must be flipped back to stay readable. */
+.frame.is-mirrored .unmirror {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
 .preview {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Never mirror: the grid must map 1:1 onto the captured frame. */
-  transform: none;
 }
 
 .grid-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(min(100cqw, 100cqh) * 0.62);
+  width: calc(min(100cqw, 100cqh) * var(--grid-fraction, 0.62));
+  max-width: calc(100cqw - 140px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   display: grid;
@@ -153,7 +168,137 @@ footer.panel {
 }
 
 .grid-cell {
+  position: relative;
   border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+/* Live readout of what the sampler sees in this cell. */
+.cell-swatch {
+  position: absolute;
+  right: 6%;
+  bottom: 6%;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.stage-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+}
+
+.pill,
+.pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.pill-btn {
+  cursor: pointer;
+}
+
+.pill-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.grid-size {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+/* Which face color belongs on each side of the face being photographed. */
+.edge-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.edge-badge .swatch {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.edge-top {
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+}
+
+.edge-bottom {
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 6px);
+}
+
+.edge-left {
+  top: 50%;
+  right: 100%;
+  transform: translate(-6px, -50%);
+}
+
+.edge-right {
+  top: 50%;
+  left: 100%;
+  transform: translate(6px, -50%);
+}
+
+.tip {
+  margin: 6px 0 0;
+}
+
+.scheme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.select {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #262c38;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.scheme-warning {
+  color: var(--danger);
+}
+
+.thumb-color {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: capitalize;
 }
 
 .camera-message {
@@ -199,6 +344,10 @@ footer.panel {
   color: var(--text);
 }
 
+.thumb-label {
+  text-transform: capitalize;
+}
+
 .mini-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -220,6 +369,30 @@ footer.panel {
 }
 
 /* Review screen */
+.photos {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.photo {
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.photo img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -247,6 +420,7 @@ footer.panel {
 .net-wrap {
   flex: 1 1 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 12px;
@@ -287,15 +461,17 @@ footer.panel {
   outline-offset: -1px;
 }
 
+/* Fixed-height message area so the net doesn't jump as errors come and go. */
+.messages {
+  height: 5.6em;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
 .errors {
   margin: 0;
   padding-left: 20px;
   color: var(--danger);
-  font-size: 0.9rem;
-}
-
-.errors:empty {
-  display: none;
 }
 
 /* Follow screen */

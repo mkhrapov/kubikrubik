@@ -41,6 +41,20 @@ export function mountReviewScreen(container: HTMLElement, app: App, state: Revie
       ),
     ),
   );
+  const photos = state.photos
+    ? el(
+        'div',
+        { class: 'photos' },
+        ...FACES.map((f) =>
+          el(
+            'figure',
+            { class: 'photo' },
+            el('img', { src: state.photos![f], alt: `${FACE_LABEL[f]} face photo` }),
+            el('figcaption', {}, FACE_LABEL[f]),
+          ),
+        ),
+      )
+    : null;
   const solveBtn = button('Solve', onSolve, { primary: true });
   const backBtn = button('← Rescan', () => app.go({ screen: 'scan' }));
   const status = el('p', { class: 'muted status' });
@@ -53,16 +67,15 @@ export function mountReviewScreen(container: HTMLElement, app: App, state: Revie
       el(
         'p',
         { class: 'instruction' },
-        'Tap any sticker to change its color. Dashed stickers were hard to read. Centers are fixed.',
+        'Compare with the photos and tap any sticker to change its color. Dashed stickers were hard to read. Centers are fixed.',
       ),
       legend,
     ),
-    el('main', { class: 'net-wrap' }, net),
+    el('main', { class: 'net-wrap' }, photos, net),
     el(
       'footer',
       { class: 'panel' },
-      errors,
-      status,
+      el('div', { class: 'messages' }, status, errors),
       el('div', { class: 'actions' }, backBtn, solveBtn),
     ),
   );
@@ -71,6 +84,7 @@ export function mountReviewScreen(container: HTMLElement, app: App, state: Revie
   function cycle(i: number): void {
     const current = FACES.indexOf(facelets[i]!);
     facelets[i] = FACES[(current + 1) % 6]!;
+    app.persist({ ...state, facelets });
     render();
   }
 
@@ -132,7 +146,9 @@ export function mountReviewScreen(container: HTMLElement, app: App, state: Revie
       for (const err of result.errors) errors.append(el('li', {}, err.message));
     }
     solveBtn.disabled = !result.ok || solving;
-    status.textContent = result.ok ? '' : 'Fix the highlighted stickers to continue.';
+    status.textContent = result.ok
+      ? 'Looks like a valid cube.'
+      : `${result.errors.length} problem${result.errors.length === 1 ? '' : 's'} — fix the highlighted stickers to continue.`;
   }
 
   return () => {};

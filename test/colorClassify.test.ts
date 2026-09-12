@@ -63,3 +63,24 @@ describe('classifyStickers', () => {
     expect(() => classifyStickers([])).toThrow();
   });
 });
+
+describe('classifyStickers under uneven lighting', () => {
+  it('tolerates a strong brightness gradient across each face', () => {
+    const truth: Face[] = solvedFacelets();
+    const idx = truth.map((_, i) => i).filter((i) => i % 9 !== 4);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = (i * 104729) % (i + 1);
+      const a = idx[i]!;
+      const b = idx[j]!;
+      [truth[a], truth[b]] = [truth[b]!, truth[a]!];
+    }
+    // Stickers in the bottom-right of each face are in shadow (down to 55%).
+    const samples = truth.map((f, i) => {
+      const within = i % 9;
+      const shade = 1 - (0.45 * ((within % 3) + Math.floor(within / 3))) / 4;
+      const base = PALETTE[f];
+      return noisy([base[0] * shade, base[1] * shade, base[2] * shade], i + 7, 12);
+    });
+    expect(classifyStickers(samples).facelets).toEqual(truth);
+  });
+});
